@@ -46,7 +46,7 @@ class TetrisGame extends HTMLElement {
     connectedCallback() {
         this.render();
         this.setupControls();
-        this.drawEmpty(); // Draw initial empty state
+        this.drawEmpty();
     }
 
     createGrid() {
@@ -214,6 +214,7 @@ class TetrisGame extends HTMLElement {
     }
 
     drawEmpty() {
+        if (!this.ctx) return;
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         this.drawGridLines();
@@ -273,6 +274,7 @@ class TetrisGame extends HTMLElement {
 
     drawNextPieces() {
         const nextCtx = this.nextCtx;
+        if (!nextCtx) return;
         nextCtx.fillStyle = '#111';
         nextCtx.fillRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
 
@@ -321,6 +323,7 @@ class TetrisGame extends HTMLElement {
                     background: #111;
                     border-radius: 15px;
                     position: relative;
+                    width: fit-content;
                 }
                 .game-container {
                     position: relative;
@@ -328,6 +331,8 @@ class TetrisGame extends HTMLElement {
                     border-radius: 8px;
                     overflow: hidden;
                     box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+                    width: ${this.COLS * this.BLOCK_SIZE}px;
+                    height: ${this.ROWS * this.BLOCK_SIZE}px;
                 }
                 canvas#tetris {
                     display: block;
@@ -362,20 +367,19 @@ class TetrisGame extends HTMLElement {
                 #start-screen {
                     position: absolute;
                     top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(0,0,0,0.8);
+                    background: rgba(0,0,0,0.85);
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
                     align-items: center;
-                    z-index: 10;
-                    border-radius: 4px;
+                    z-index: 100;
                 }
                 #start-screen button {
                     background: transparent;
-                    border: 2px solid var(--neon-pink, #ff007f);
-                    color: var(--neon-pink, #ff007f);
-                    padding: 15px 40px;
-                    font-size: 1.5rem;
+                    border: 2px solid #ff007f;
+                    color: #ff007f;
+                    padding: 15px 30px;
+                    font-size: 1.2rem;
                     font-weight: bold;
                     cursor: pointer;
                     border-radius: 50px;
@@ -385,7 +389,7 @@ class TetrisGame extends HTMLElement {
                     letter-spacing: 2px;
                 }
                 #start-screen button:hover {
-                    background: var(--neon-pink, #ff007f);
+                    background: #ff007f;
                     color: #000;
                     box-shadow: 0 0 30px rgba(255, 0, 127, 0.6);
                 }
@@ -393,7 +397,7 @@ class TetrisGame extends HTMLElement {
                     background: #111;
                     margin-top: 5px;
                 }
-                @media (max-width: 500px) {
+                @media (max-width: 600px) {
                     :host { flex-direction: column; align-items: center; }
                     .side-panel { flex-direction: row; width: 100%; justify-content: space-around; }
                 }
@@ -401,7 +405,7 @@ class TetrisGame extends HTMLElement {
             <div class="game-container">
                 <canvas id="tetris" width="${this.COLS * this.BLOCK_SIZE}" height="${this.ROWS * this.BLOCK_SIZE}"></canvas>
                 <div id="start-screen">
-                    <button id="start-btn">START</button>
+                    <button id="start-btn">START GAME</button>
                 </div>
             </div>
             <div class="side-panel">
@@ -426,16 +430,6 @@ class TetrisGame extends HTMLElement {
         this.shadowRoot.getElementById('start-btn').addEventListener('click', () => this.startGame());
     }
 }
-
-customElements.define('tetris-game', TetrisGame);
-
-// Wire up mobile controls
-const game = document.querySelector('tetris-game');
-document.getElementById('btn-left').addEventListener('click', () => game.move(-1));
-document.getElementById('btn-right').addEventListener('click', () => game.move(1));
-document.getElementById('btn-up').addEventListener('click', () => game.rotate());
-document.getElementById('btn-down').addEventListener('click', () => game.drop());
-document.getElementById('btn-drop').addEventListener('click', () => game.hardDrop());
 
 customElements.define('tetris-game', TetrisGame);
 
