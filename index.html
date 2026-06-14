@@ -3,15 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lotto Number Generator</title>
+    <title>Arcade - Neon Tetris</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Lotto Number Generator</h1>
-        <div id="numbers-display" class="numbers-display"></div>
-        <button id="generate-button" class="generate-button">Generate Numbers</button>
+    <div class="arcade-wrapper">
+        <header>
+            <h1>ARCADE</h1>
+        </header>
+        <main>
+            <tetris-game></tetris-game>
+            <div class="mobile-controls">
+                <button class="control-btn" id="btn-left">←</button>
+                <button class="control-btn" id="btn-up">↻</button>
+                <button class="control-btn" id="btn-right">→</button>
+                <button class="control-btn" id="btn-down">↓</button>
+                <button class="control-btn" id="btn-drop">⤓</button>
+            </div>
+        </main>
+        <footer>
+            <p>Use Arrow Keys to Move & Rotate • Space to Drop</p>
+        </footer>
     </div>
-    <script src="main.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>

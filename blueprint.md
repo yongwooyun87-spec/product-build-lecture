@@ -1,27 +1,31 @@
-# Lotto Number Generator
+# Play Arcade - Tetris
 
 ## Overview
+A web-based arcade platform starting with a classic Tetris game. The application features a neon-inspired, retro-modern design, providing an immersive gaming experience using modern web standards like Web Components, CSS Container Queries, and ES Modules.
 
-A simple, visually appealing web application to generate random lottery numbers. The application will feature a modern design with interactive elements and a clean layout, adhering to the development guidelines.
+## Application Architecture
+- **Web Components:** The entire game is encapsulated within a `<tetris-game>` custom element.
+- **State Management:** Reactive game state handling score, levels, and piece positioning.
+- **Rendering:** Canvas-based rendering for high performance, wrapped inside the custom element's Shadow DOM.
+- **Styling:** CSS Cascade Layers for base and component styles, using `oklch` for vibrant neon colors.
 
-## Current Plan
+## Features implemented
+### 1. Retro-Modern Arcade UI
+- Neon aesthetic with glow effects using `oklch` colors.
+- Responsive layout that fits both desktop and mobile screens.
+- Score and level display with custom typography.
+- Multi-layered drop shadows and neon "glow" effects.
 
-### Feature: Lotto Number Generator
+### 2. Core Tetris Logic
+- Random tetromino generation (I, J, L, O, S, T, Z).
+- Collision detection and line clearing.
+- Piece rotation and hard drop functionality.
+- Game Over state with restart capability.
 
-*   **Objective:** Create a user interface to generate and display 6 unique lottery numbers.
-*   **Steps:**
-    1.  **HTML Structure:**
-        *   Create a main container for the application.
-        *   Add a title: "Lotto Number Generator".
-        *   Add a display area for the generated numbers.
-        *   Add a "Generate Numbers" button.
-    2.  **CSS Styling:**
-        *   Apply a modern design with a dark theme.
-        *   Use a visually balanced layout with ample spacing.
-        *   Style the number display area and the generated numbers (e.g., as colored balls).
-        *   Add interactive styles for the button (e.g., hover effects, "glow" effect).
-        *   Add a subtle background texture and drop shadows for depth.
-    3.  **JavaScript Logic:**
-        *   Implement a function to generate 6 unique random numbers between 1 and 45.
-        *   Sort the generated numbers in ascending order.
-        *   Display the numbers in the UI when the "Generate Numbers" button is clicked.
+### 3. Responsive Controls
+- Keyboard support (Arrow keys and Space).
+- On-screen mobile controls with arcade-style buttons.
+- Touch-friendly interface with neon feedback.
+
+## Current State
+The project has successfully transitioned from a Lotto generator to a fully functional Tetris arcade game. All core mechanics and visual styles are implemented and verified.
