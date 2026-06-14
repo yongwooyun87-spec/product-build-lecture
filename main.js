@@ -32,33 +32,52 @@ class TetrisGame extends HTMLElement {
         this.state = {
             grid: this.createGrid(),
             activePiece: null,
+            nextPieces: [],
             score: 0,
             gameOver: false,
+            gameStarted: false,
             level: 1,
             dropCounter: 0,
-            dropInterval: 1000, // ms
+            dropInterval: 1000,
             lastTime: 0
         };
     }
 
     connectedCallback() {
         this.render();
-        this.initGame();
         this.setupControls();
-        this.gameLoop();
+        this.drawEmpty(); // Draw initial empty state
     }
 
     createGrid() {
         return Array.from({ length: this.ROWS }, () => Array(this.COLS).fill(0));
     }
 
-    initGame() {
+    startGame() {
+        this.state = {
+            ...this.state,
+            grid: this.createGrid(),
+            score: 0,
+            gameOver: false,
+            gameStarted: true,
+            nextPieces: [this.getRandomType(), this.getRandomType()],
+            lastTime: performance.now()
+        };
         this.spawnPiece();
+        this.updateUI();
+        this.gameLoop();
+        this.shadowRoot.getElementById('start-screen').style.display = 'none';
+    }
+
+    getRandomType() {
+        const types = Object.keys(this.SHAPES);
+        return types[Math.floor(Math.random() * types.length)];
     }
 
     spawnPiece() {
-        const types = Object.keys(this.SHAPES);
-        const type = types[Math.floor(Math.random() * types.length)];
+        const type = this.state.nextPieces.shift();
+        this.state.nextPieces.push(this.getRandomType());
+        
         this.state.activePiece = {
             type,
             shape: this.SHAPES[type],
@@ -67,7 +86,9 @@ class TetrisGame extends HTMLElement {
 
         if (this.collide()) {
             this.state.gameOver = true;
+            this.state.gameStarted = false;
         }
+        this.drawNextPieces();
     }
 
     collide() {
@@ -90,7 +111,7 @@ class TetrisGame extends HTMLElement {
     }
 
     rotate() {
-        if (this.state.gameOver) return;
+        if (!this.state.gameStarted || this.state.gameOver) return;
         const piece = this.state.activePiece;
         const prevShape = piece.shape;
         piece.shape = piece.shape[0].map((_, i) => piece.shape.map(row => row[i]).reverse());
@@ -101,7 +122,7 @@ class TetrisGame extends HTMLElement {
     }
 
     move(dir) {
-        if (this.state.gameOver) return;
+        if (!this.state.gameStarted || this.state.gameOver) return;
         this.state.activePiece.pos.x += dir;
         if (this.collide()) {
             this.state.activePiece.pos.x -= dir;
@@ -110,7 +131,7 @@ class TetrisGame extends HTMLElement {
     }
 
     drop() {
-        if (this.state.gameOver) return;
+        if (!this.state.gameStarted || this.state.gameOver) return;
         this.state.activePiece.pos.y++;
         if (this.collide()) {
             this.state.activePiece.pos.y--;
@@ -123,7 +144,7 @@ class TetrisGame extends HTMLElement {
     }
 
     hardDrop() {
-        if (this.state.gameOver) return;
+        if (!this.state.gameStarted || this.state.gameOver) return;
         while (!this.collide()) {
             this.state.activePiece.pos.y++;
         }
@@ -175,8 +196,8 @@ class TetrisGame extends HTMLElement {
     }
 
     gameLoop(time = 0) {
-        if (this.state.gameOver) {
-            this.drawGameOver();
+        if (!this.state.gameStarted) {
+            if (this.state.gameOver) this.drawGameOver();
             return;
         }
 
@@ -192,17 +213,37 @@ class TetrisGame extends HTMLElement {
         requestAnimationFrame(this.gameLoop.bind(this));
     }
 
+    drawEmpty() {
+        this.ctx.fillStyle = '#000';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.drawGridLines();
+    }
+
+    drawGridLines() {
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        this.ctx.setLineDash([5, 5]);
+        for (let x = 0; x <= this.COLS; x++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x * this.BLOCK_SIZE, 0);
+            this.ctx.lineTo(x * this.BLOCK_SIZE, this.canvas.height);
+            this.ctx.stroke();
+        }
+        this.ctx.setLineDash([]);
+    }
+
     draw() {
         const ctx = this.ctx;
         if (!ctx) return;
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+        this.drawGridLines();
+
         // Draw grid
         this.state.grid.forEach((row, y) => {
             row.forEach((value, x) => {
                 if (value !== 0) {
-                    this.drawBlock(x, y, this.COLORS[value]);
+                    this.drawBlock(ctx, x, y, this.COLORS[value]);
                 }
             });
         });
@@ -213,34 +254,56 @@ class TetrisGame extends HTMLElement {
             shape.forEach((row, y) => {
                 row.forEach((value, x) => {
                     if (value !== 0) {
-                        this.drawBlock(pos.x + x, pos.y + y, this.COLORS[type]);
+                        this.drawBlock(ctx, pos.x + x, pos.y + y, this.COLORS[type]);
                     }
                 });
             });
         }
     }
 
-    drawBlock(x, y, color) {
-        this.ctx.fillStyle = color;
-        this.ctx.fillRect(x * this.BLOCK_SIZE, y * this.BLOCK_SIZE, this.BLOCK_SIZE, this.BLOCK_SIZE);
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        this.ctx.strokeRect(x * this.BLOCK_SIZE, y * this.BLOCK_SIZE, this.BLOCK_SIZE, this.BLOCK_SIZE);
-        
-        // Add neon glow effect
-        this.ctx.shadowBlur = 10;
-        this.ctx.shadowColor = color;
+    drawBlock(ctx, x, y, color, size = this.BLOCK_SIZE) {
+        ctx.fillStyle = color;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+        ctx.fillRect(x * size, y * size, size, size);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.strokeRect(x * size, y * size, size, size);
+        ctx.shadowBlur = 0;
+    }
+
+    drawNextPieces() {
+        const nextCtx = this.nextCtx;
+        nextCtx.fillStyle = '#111';
+        nextCtx.fillRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
+
+        this.state.nextPieces.forEach((type, index) => {
+            const shape = this.SHAPES[type];
+            const color = this.COLORS[type];
+            const offsetX = (this.nextCanvas.width / 2 / 20) - (shape[0].length / 2);
+            const offsetY = (index * 4) + 1;
+
+            shape.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        this.drawBlock(nextCtx, offsetX + x, offsetY + y, color, 20);
+                    }
+                });
+            });
+        });
     }
 
     drawGameOver() {
-        this.ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        this.ctx.fillStyle = 'rgba(0,0,0,0.85)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.fillStyle = '#fff';
-        this.ctx.font = '30px "Segoe UI"';
+        this.ctx.font = 'bold 30px "Segoe UI"';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2);
+        this.ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 20);
         this.ctx.font = '20px "Segoe UI"';
-        this.ctx.fillText(`Score: ${this.state.score}`, this.canvas.width / 2, this.canvas.height / 2 + 40);
-        this.ctx.fillText('Click to Restart', this.canvas.width / 2, this.canvas.height / 2 + 80);
+        this.ctx.fillText(`Final Score: ${this.state.score}`, this.canvas.width / 2, this.canvas.height / 2 + 20);
+        
+        this.shadowRoot.getElementById('start-screen').style.display = 'flex';
+        this.shadowRoot.querySelector('#start-screen button').textContent = 'RESTART';
     }
 
     updateUI() {
@@ -252,57 +315,127 @@ class TetrisGame extends HTMLElement {
             <style>
                 :host {
                     display: flex;
-                    flex-direction: column;
-                    align-items: center;
+                    flex-direction: row;
+                    gap: 20px;
                     padding: 20px;
                     background: #111;
-                    border-radius: 10px;
+                    border-radius: 15px;
+                    position: relative;
                 }
-                canvas {
-                    border: 2px solid #333;
+                .game-container {
+                    position: relative;
+                    border: 4px solid var(--neon-blue, #00f2ff);
+                    border-radius: 8px;
+                    overflow: hidden;
+                    box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+                }
+                canvas#tetris {
+                    display: block;
                     background: #000;
-                    width: 100%;
-                    max-width: 300px;
-                    height: auto;
                 }
-                .stats {
-                    width: 100%;
+                .side-panel {
                     display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 10px;
+                    flex-direction: column;
+                    gap: 20px;
+                    min-width: 120px;
+                }
+                .stats-box, .next-box {
+                    background: #000;
+                    border: 2px solid #333;
+                    padding: 10px;
+                    border-radius: 8px;
+                    text-align: center;
+                }
+                .label {
+                    font-size: 0.7rem;
+                    color: #888;
+                    margin-bottom: 5px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                }
+                .value {
                     font-family: 'Courier New', Courier, monospace;
+                    font-size: 1.2rem;
                     color: oklch(70% 0.3 150);
                     text-shadow: 0 0 5px oklch(70% 0.3 150);
                 }
+                #start-screen {
+                    position: absolute;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0,0,0,0.8);
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10;
+                    border-radius: 4px;
+                }
+                #start-screen button {
+                    background: transparent;
+                    border: 2px solid var(--neon-pink, #ff007f);
+                    color: var(--neon-pink, #ff007f);
+                    padding: 15px 40px;
+                    font-size: 1.5rem;
+                    font-weight: bold;
+                    cursor: pointer;
+                    border-radius: 50px;
+                    transition: all 0.3s;
+                    box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
+                    text-transform: uppercase;
+                    letter-spacing: 2px;
+                }
+                #start-screen button:hover {
+                    background: var(--neon-pink, #ff007f);
+                    color: #000;
+                    box-shadow: 0 0 30px rgba(255, 0, 127, 0.6);
+                }
+                canvas#next {
+                    background: #111;
+                    margin-top: 5px;
+                }
+                @media (max-width: 500px) {
+                    :host { flex-direction: column; align-items: center; }
+                    .side-panel { flex-direction: row; width: 100%; justify-content: space-around; }
+                }
             </style>
-            <div class="stats">
-                <span>SCORE: <span id="score">0</span></span>
-                <span>LEVEL: <span id="level">1</span></span>
+            <div class="game-container">
+                <canvas id="tetris" width="${this.COLS * this.BLOCK_SIZE}" height="${this.ROWS * this.BLOCK_SIZE}"></canvas>
+                <div id="start-screen">
+                    <button id="start-btn">START</button>
+                </div>
             </div>
-            <canvas id="tetris" width="${this.COLS * this.BLOCK_SIZE}" height="${this.ROWS * this.BLOCK_SIZE}"></canvas>
+            <div class="side-panel">
+                <div class="stats-box">
+                    <div class="label">Score</div>
+                    <div class="value" id="score">0</div>
+                    <div class="label" style="margin-top:10px">Level</div>
+                    <div class="value" id="level">1</div>
+                </div>
+                <div class="next-box">
+                    <div class="label">Next</div>
+                    <canvas id="next" width="80" height="160"></canvas>
+                </div>
+            </div>
         `;
+        
         this.canvas = this.shadowRoot.getElementById('tetris');
         this.ctx = this.canvas.getContext('2d');
+        this.nextCanvas = this.shadowRoot.getElementById('next');
+        this.nextCtx = this.nextCanvas.getContext('2d');
         
-        this.canvas.addEventListener('click', () => {
-            if (this.state.gameOver) {
-                this.state = {
-                    grid: this.createGrid(),
-                    activePiece: null,
-                    score: 0,
-                    gameOver: false,
-                    level: 1,
-                    dropCounter: 0,
-                    dropInterval: 1000,
-                    lastTime: 0
-                };
-                this.initGame();
-                this.updateUI();
-                this.gameLoop();
-            }
-        });
+        this.shadowRoot.getElementById('start-btn').addEventListener('click', () => this.startGame());
     }
 }
+
+customElements.define('tetris-game', TetrisGame);
+
+// Wire up mobile controls
+const game = document.querySelector('tetris-game');
+document.getElementById('btn-left').addEventListener('click', () => game.move(-1));
+document.getElementById('btn-right').addEventListener('click', () => game.move(1));
+document.getElementById('btn-up').addEventListener('click', () => game.rotate());
+document.getElementById('btn-down').addEventListener('click', () => game.drop());
+document.getElementById('btn-drop').addEventListener('click', () => game.hardDrop());
 
 customElements.define('tetris-game', TetrisGame);
 
