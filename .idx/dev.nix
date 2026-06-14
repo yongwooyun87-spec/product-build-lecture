@@ -7,6 +7,7 @@
   packages = [
     pkgs.nodejs_22
     pkgs.python3
+    pkgs.gemini-cli
   ];
   # Sets environment variables in the workspace
   env = {};
